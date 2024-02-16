@@ -20,7 +20,29 @@ class InitializeProject:
             os.system("touch .env")
             loader.ok("✔")
         
-
+    def create_frontend_templates(self) -> None:
+        with yaspin() as loader:
+            base_html = '''
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>{% block head_title %}{% endblock %}</title>
+        {% block extra_head %}
+        {% endblock %}
+    </head>
+    <body>
+        {% block body %}
+    </body>
+</html>
+'''
+            loader.text = "Adding Template"
+            loader.color = "green"
+            os.mkdir("templates")
+            os.mkdir("static")
+            os.system("cd templates && touch base.html")
+            with open(f"{self.cwd}/templates/base.html", 'w') as file:
+                file.writelines(base_html)
+            loader.ok("✔")
 
     def run(self) -> None:
         main_options = [ "Django", "Quit" ]
@@ -34,6 +56,7 @@ class InitializeProject:
                 self.quitting = True
             if main_options_choice == "Django":
                 self.create_django_project()
+                self.create_frontend_templates()
                 break
 
 
