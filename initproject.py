@@ -9,7 +9,26 @@ class InitializeProject:
         self.cwd: str = os.getcwd()
         self.db_type: str = "SQLite"
         self.css_type: str = "CSS"
+        self.js_type: str = "JS"
         self.ui_lib: str = "None"
+
+    def js_menu(self):
+        js_options = [ "JS", "React", "Vue", "Quit" ]
+        js_menu = TerminalMenu(js_options, title= "Choose a JS Framework")
+
+        while not self.quitting:
+            js_options_index = js_menu.show()
+            js_options_choice = js_options[js_options_index]
+
+            if js_options_choice == "JS":
+                self.js_type = "JS"
+                break
+            if js_options_choice == "React":
+                self.js_type = "React"
+                break
+            if js_options_choice == "Vue":
+                self.js_type = "Vue"
+                break
 
     def css_menu(self):
         css_options = [ "CSS", "TailwindCSS", "Quit" ]
@@ -30,6 +49,7 @@ class InitializeProject:
 
 
     def create_django_project(self) -> None:
+        self.js_menu()
         self.css_menu()
         with yaspin() as loader:
             loader.text = "Creating a new Django Project"
@@ -76,9 +96,8 @@ env = environ.Env(
                     break
             with open(f'{self.cwd}/core/settings.py', 'w') as file:
                 file.writelines(lines)
+            loader.ok("✔")
 
-
-        
     def create_frontend_templates(self) -> None:
         with yaspin() as loader:
             base_html = '''
@@ -116,16 +135,51 @@ env = environ.Env(
             with open(f'{self.cwd}/core/settings.py', 'w') as file:
                 file.writelines(lines)
             loader.ok("✔")
+
+    def js_setup(self) -> None:
+        with yaspin() as loader:
+            loader.text = "Adding JS"
+            loader.color = "green"
+            if self.js_type == "JS":
+                # Check if static dir exists and make js dir
+                if os.path.exists(f"{self.cwd}/static"):
+                    os.system(f"cd {self.cwd}/static && mkdir js")
+                # Make static dir and js dir
+                else:
+                    os.system(f"mkdir static && cd {self.cwd}/static && mkdir js")
+            if self.js_type == "React":
+                with open(f'{self.cwd}/templates/base.html', 'r') as file:
+                    lines = file.readlines()
+                for i, line in enumerate(lines):
+                    if '<meta name="viewport" content="width=device-width, initial-scale=1.0">' in line:
+                        js = '''
+        <!-- React JS -->
+        <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+        <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+        '''
+                        lines.insert(i + 1, js + '\n')
+                        break
+                with open(f'{self.cwd}/templates/base.html', 'w') as file:
+                    file.writelines(lines)
+                # Check if static dir exists and make js dir
+                if os.path.exists(f"{self.cwd}/static"):
+                    os.system(f"cd {self.cwd}/static && mkdir js")
+                # Make static dir and js dir
+                else:
+                    os.system(f"mkdir static && cd {self.cwd}/static && mkdir js")
+            loader.ok("✔")
     
     def css_setup(self) -> None:
         with yaspin() as loader:
             loader.text = "Adding CSS"
             loader.color = "green"
             if self.css_type == "CSS":
-                # Creating static folder
-                os.mkdir("static")
-                # Creating style.css in static folder
-                os.system("cd static && touch style.css")
+                # Check if static dir exists and make style.css file
+                if os.path.exists(f"{self.cwd}/static"):
+                    os.system(f"cd {self.cwd}/static && touch style.css")
+                # Create static dir and style.css file
+                else:
+                    os.system(f"mkdir static && cd {self.cwd}/static && touch style.css")
                 # Adding Static files path to settings.py
                 with open(f'{self.cwd}/core/settings.py', 'r') as file:
                     lines = file.readlines()
@@ -142,7 +196,9 @@ env = environ.Env(
                     lines = file.readlines()
                 for i, line in enumerate(lines):
                     if '<meta name="viewport" content="width=device-width, initial-scale=1.0">' in line:
-                        tailwindcdn = '        <script src="https://cdn.tailwindcss.com"></script>'
+                        tailwindcdn = f'''
+        <!-- Tailwind CSS -->
+        <script src="https://cdn.tailwindcss.com"></script>'''
                         lines.insert(i + 1, tailwindcdn + '\n')
                         break
                 with open(f'{self.cwd}/templates/base.html', 'w') as file:
@@ -165,6 +221,7 @@ env = environ.Env(
                 self.create_django_project()
                 self.env_setup()
                 self.create_frontend_templates()
+                self.js_setup()
                 self.css_setup()
                 break
 
