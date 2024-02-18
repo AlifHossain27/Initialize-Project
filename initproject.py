@@ -167,6 +167,26 @@ env = environ.Env(
                 # Make static dir and js dir
                 else:
                     os.system(f"mkdir static && cd {self.cwd}/static && mkdir js")
+
+            if self.js_type == "Vue":
+                with open(f'{self.cwd}/templates/base.html', 'r') as file:
+                    lines = file.readlines()
+                for i, line in enumerate(lines):
+                    if '<meta name="viewport" content="width=device-width, initial-scale=1.0">' in line:
+                        js = '''
+        <!-- React JS -->
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        '''
+                        lines.insert(i + 1, js + '\n')
+                        break
+                with open(f'{self.cwd}/templates/base.html', 'w') as file:
+                    file.writelines(lines)
+                # Check if static dir exists and make js dir
+                if os.path.exists(f"{self.cwd}/static"):
+                    os.system(f"cd {self.cwd}/static && mkdir js")
+                # Make static dir and js dir
+                else:
+                    os.system(f"mkdir static && cd {self.cwd}/static && mkdir js")
             loader.ok("✔")
     
     def css_setup(self) -> None:
