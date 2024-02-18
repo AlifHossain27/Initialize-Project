@@ -36,7 +36,48 @@ class InitializeProject:
             loader.color = "green"
             os.system("conda run -n web django-admin startproject core .")
             os.system("touch .env")
+            with open(f'{self.cwd}/.env', 'w') as file:
+                file.writelines("DEBUG=True")
             loader.ok("✔")
+
+    def env_setup(self) -> None:
+        with yaspin() as loader:
+            loader.text = "Setting up env"
+            loader.color = "green"
+            # Importing environ
+            with open(f'{self.cwd}/core/settings.py', 'r') as file:
+                lines = file.readlines()
+            for i, line in enumerate(lines):
+                if 'from pathlib import Path' in line:
+                    env_import = 'import environ \n\n'
+                    lines.insert(i + 1, env_import + '\n')
+                    break
+            with open(f'{self.cwd}/core/settings.py', 'w') as file:
+                file.writelines(lines)
+            # Initializing ENV
+            with open(f'{self.cwd}/core/settings.py', 'r') as file:
+                lines = file.readlines()
+            for i, line in enumerate(lines):
+                if 'BASE_DIR = Path(__file__).resolve().parent.parent' in line:
+                    init_env = '''
+env = environ.Env(
+    DEBUG = (bool,False)
+    ) \n''' + "environ.Env.read_env(BASE_DIR / '.env') \n"
+                    lines.insert(i + 1, init_env + '\n')
+                    break
+            with open(f'{self.cwd}/core/settings.py', 'w') as file:
+                file.writelines(lines)
+            # Using DEBUG of env
+            with open(f'{self.cwd}/core/settings.py', 'r') as file:
+                lines = file.readlines()
+            for i, line in enumerate(lines):
+                if "DEBUG = True" in line:
+                    lines[i] = "DEBUG = env('DEBUG')"
+                    break
+            with open(f'{self.cwd}/core/settings.py', 'w') as file:
+                file.writelines(lines)
+
+
         
     def create_frontend_templates(self) -> None:
         with yaspin() as loader:
@@ -52,6 +93,7 @@ class InitializeProject:
     </head>
     <body>
         {% block body %}
+        {% endblock %}
     </body>
 </html>
 '''
@@ -62,7 +104,7 @@ class InitializeProject:
             # Creating base.html file in templates folder
             os.system("cd templates && touch base.html")
             # Writing base html
-            with open(f"{self.cwd}/templates/base.html", 'w') as file:
+            with open(f'{self.cwd}/templates/base.html', 'w') as file:
                 file.writelines(base_html)
             # Adding Template files path to settings.py
             with open(f'{self.cwd}/core/settings.py', 'r') as file:
@@ -121,6 +163,7 @@ class InitializeProject:
                 self.quitting = True
             if main_options_choice == "Django":
                 self.create_django_project()
+                self.env_setup()
                 self.create_frontend_templates()
                 self.css_setup()
                 break
