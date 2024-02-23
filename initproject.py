@@ -9,25 +9,27 @@ class InitializeProject:
         self.cwd: str = os.getcwd()
         self.db_type: str = "SQLite"
         self.css_type: str = "CSS"
-        self.js_type: str = "JS"
+        self.js_cdn: str = "JS"
         self.ui_lib: str = "None"
 
-    def js_menu(self):
-        js_options = [ "JS", "React", "Vue", "Quit" ]
-        js_menu = TerminalMenu(js_options, title= "Choose a JS Framework")
+    def js_cdn_menu(self):
+        js_cdn_options = [ "JS", "React", "Vue", "Quit" ]
+        js_cdn_menu = TerminalMenu(js_cdn_options, title= "Choose a JS CDN")
 
         while not self.quitting:
-            js_options_index = js_menu.show()
-            js_options_choice = js_options[js_options_index]
+            js_cdn_options_index = js_cdn_menu.show()
+            js_cdn_options_choice = js_cdn_options[js_cdn_options_index]
 
-            if js_options_choice == "JS":
-                self.js_type = "JS"
+            if js_cdn_options_choice == "JS":
+                self.js_cdn = "JS"
                 break
-            if js_options_choice == "React":
-                self.js_type = "React"
+
+            if js_cdn_options_choice == "React":
+                self.js_cdn = "React"
                 break
-            if js_options_choice == "Vue":
-                self.js_type = "Vue"
+
+            if js_cdn_options_choice == "Vue":
+                self.js_cdn = "Vue"
                 break
 
     def css_menu(self):
@@ -41,29 +43,35 @@ class InitializeProject:
             if css_options_choice == "CSS":
                 self.css_type = "CSS"
                 break
+
             if css_options_choice == "TailwindCSS":
                 self.css_type = "TailwindCSS"
                 break
+
             if css_options_choice == "Quit":
                 self.quitting = True
 
 
     def create_django_project(self) -> None:
-        self.js_menu()
+        self.js_cdn_menu()
         self.css_menu()
         with yaspin() as loader:
             loader.text = "Creating a new Django Project"
             loader.color = "green"
+
+            # Activating conda env and creating new Django project
             os.system("conda run -n web django-admin startproject core .")
             os.system("touch .env")
             with open(f'{self.cwd}/.env', 'w') as file:
                 file.writelines("DEBUG=True")
+
             loader.ok("✔")
 
     def env_setup(self) -> None:
         with yaspin() as loader:
             loader.text = "Setting up env"
             loader.color = "green"
+
             # Importing environ
             with open(f'{self.cwd}/core/settings.py', 'r') as file:
                 lines = file.readlines()
@@ -74,6 +82,7 @@ class InitializeProject:
                     break
             with open(f'{self.cwd}/core/settings.py', 'w') as file:
                 file.writelines(lines)
+
             # Initializing ENV
             with open(f'{self.cwd}/core/settings.py', 'r') as file:
                 lines = file.readlines()
@@ -87,6 +96,7 @@ env = environ.Env(
                     break
             with open(f'{self.cwd}/core/settings.py', 'w') as file:
                 file.writelines(lines)
+
             # Using DEBUG of env
             with open(f'{self.cwd}/core/settings.py', 'r') as file:
                 lines = file.readlines()
@@ -96,11 +106,12 @@ env = environ.Env(
                     break
             with open(f'{self.cwd}/core/settings.py', 'w') as file:
                 file.writelines(lines)
+
             loader.ok("✔")
 
     def create_frontend_templates(self) -> None:
         with yaspin() as loader:
-            base_html = '''
+            base_html = '''{% load static %}
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -118,10 +129,13 @@ env = environ.Env(
 '''
             loader.text = "Adding Template"
             loader.color = "green"
+
             # Creating templates folder
             os.mkdir("templates")
+
             # Creating base.html file in templates folder
             os.system("cd templates && touch base.html")
+
             # Writing base html
             with open(f'{self.cwd}/templates/base.html', 'w') as file:
                 file.writelines(base_html)
@@ -134,20 +148,33 @@ env = environ.Env(
                         break
             with open(f'{self.cwd}/core/settings.py', 'w') as file:
                 file.writelines(lines)
+
+            # Adding Static files path to settings.py
+            with open(f'{self.cwd}/core/settings.py', 'r') as file:
+                    lines = file.readlines()
+            for i, line in enumerate(lines):
+                if '# Static files (CSS, JavaScript, Images)' in line:
+                    tailwindcdn = 'STATICFILES_DIRS = [BASE_DIR / "static"]'
+                    lines.insert(i + 1, tailwindcdn + '\n')
+                    break
+            with open(f'{self.cwd}/core/settings.py', 'w') as file:
+                file.writelines(lines)
+
             loader.ok("✔")
 
-    def js_setup(self) -> None:
+    def js_cdn_setup(self) -> None:
         with yaspin() as loader:
             loader.text = "Adding JS"
             loader.color = "green"
-            if self.js_type == "JS":
+            if self.js_cdn == "JS":
                 # Check if static dir exists and make js dir
                 if os.path.exists(f"{self.cwd}/static"):
                     os.system(f"cd {self.cwd}/static && mkdir js")
                 # Make static dir and js dir
                 else:
                     os.system(f"mkdir static && cd {self.cwd}/static && mkdir js")
-            if self.js_type == "React":
+
+            if self.js_cdn == "React":
                 with open(f'{self.cwd}/templates/base.html', 'r') as file:
                     lines = file.readlines()
                 for i, line in enumerate(lines):
@@ -156,11 +183,56 @@ env = environ.Env(
         <!-- React JS -->
         <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
         <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+        <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
         '''
                         lines.insert(i + 1, js + '\n')
                         break
                 with open(f'{self.cwd}/templates/base.html', 'w') as file:
                     file.writelines(lines)
+
+                # Counter Code
+                with open(f'{self.cwd}/templates/base.html', 'r') as file:
+                    lines = file.readlines()
+                for i, line in enumerate(lines):
+                    if '<body>' in line:
+                        counter = '''        <div id="app"></div>
+        <script type="text/babel">
+            const Counter = () => {
+                const [counter, setCounter] = React.useState(0);
+
+                const handleIncrement = () => {
+                    setCounter(counter + 1);
+                };
+                const handleDecreament = () => {
+                    setCounter(counter - 1);
+                }
+
+                return (
+                    <div class="flex-row gap-6 text-3xl">
+                        <div>Counter</div>
+                        <div class="pt-6 flex gap-4 p-4">
+                            <button onClick={handleDecreament}> - </button>
+                            <h1>{counter}</h1>
+                            <button onClick={handleIncrement}> + </button>
+                        </div>
+                    </div>
+                );
+            };
+
+            const App = () => {
+                return (
+                    <div class="h-screen flex items-center justify-center">
+                        <Counter />
+                    </div>
+                );
+            };
+            ReactDOM.render(<App/>, document.getElementById('app'));
+        </script>'''
+                        lines.insert(i + 1, counter + '\n')
+                        break
+                with open(f'{self.cwd}/templates/base.html', 'w') as file:
+                    file.writelines(lines)
+
                 # Check if static dir exists and make js dir
                 if os.path.exists(f"{self.cwd}/static"):
                     os.system(f"cd {self.cwd}/static && mkdir js")
@@ -168,31 +240,34 @@ env = environ.Env(
                 else:
                     os.system(f"mkdir static && cd {self.cwd}/static && mkdir js")
 
-            if self.js_type == "Vue":
+            if self.js_cdn == "Vue":
                 with open(f'{self.cwd}/templates/base.html', 'r') as file:
                     lines = file.readlines()
                 for i, line in enumerate(lines):
                     if '<meta name="viewport" content="width=device-width, initial-scale=1.0">' in line:
                         js = '''
-        <!-- React JS -->
+        <!-- Vue JS -->
         <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
         '''
                         lines.insert(i + 1, js + '\n')
                         break
                 with open(f'{self.cwd}/templates/base.html', 'w') as file:
                     file.writelines(lines)
+
                 # Check if static dir exists and make js dir
                 if os.path.exists(f"{self.cwd}/static"):
                     os.system(f"cd {self.cwd}/static && mkdir js")
                 # Make static dir and js dir
                 else:
                     os.system(f"mkdir static && cd {self.cwd}/static && mkdir js")
+
             loader.ok("✔")
     
     def css_setup(self) -> None:
         with yaspin() as loader:
             loader.text = "Adding CSS"
             loader.color = "green"
+
             if self.css_type == "CSS":
                 # Check if static dir exists and make style.css file
                 if os.path.exists(f"{self.cwd}/static"):
@@ -200,16 +275,7 @@ env = environ.Env(
                 # Create static dir and style.css file
                 else:
                     os.system(f"mkdir static && cd {self.cwd}/static && touch style.css")
-                # Adding Static files path to settings.py
-                with open(f'{self.cwd}/core/settings.py', 'r') as file:
-                    lines = file.readlines()
-                for i, line in enumerate(lines):
-                    if '# Static files (CSS, JavaScript, Images)' in line:
-                        tailwindcdn = 'STATICFILES_DIRS = [BASE_DIR / "static"]'
-                        lines.insert(i + 1, tailwindcdn + '\n')
-                        break
-                with open(f'{self.cwd}/core/settings.py', 'w') as file:
-                    file.writelines(lines)
+                
             if self.css_type == "TailwindCSS":
                 # Adding TailwindCSS CDN to base.html file
                 with open(f'{self.cwd}/templates/base.html', 'r') as file:
@@ -225,6 +291,7 @@ env = environ.Env(
                     file.writelines(lines)
             else:
                 pass
+
             loader.ok("✔")
 
     def run(self) -> None:
@@ -235,13 +302,15 @@ env = environ.Env(
         while not self.quitting:
             main_options_index = main_menu.show()
             main_options_choice = main_options[main_options_index]
+
             if main_options_choice == "Quit":
                 self.quitting = True
+
             if main_options_choice == "Django":
                 self.create_django_project()
                 self.env_setup()
                 self.create_frontend_templates()
-                self.js_setup()
+                self.js_cdn_setup()
                 self.css_setup()
                 break
 
