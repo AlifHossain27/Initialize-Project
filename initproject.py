@@ -53,8 +53,6 @@ class InitializeProject:
 
 
     def create_django_project(self) -> None:
-        self.js_cdn_menu()
-        self.css_menu()
         with yaspin() as loader:
             loader.text = "Creating a new Django Project"
             loader.color = "green"
@@ -307,6 +305,10 @@ env = environ.Env(
                 self.quitting = True
 
             if main_options_choice == "Django":
+                self.js_cdn_menu()
+                self.css_menu()
+                if self.quitting == True:
+                    break
                 self.create_django_project()
                 self.env_setup()
                 self.create_frontend_templates()
