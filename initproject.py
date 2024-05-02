@@ -16,6 +16,52 @@ class Database:
                 os.system(f"cd {cwd} && conda run -n web python manage.py makemigrations")
                 os.system(f"cd {cwd} && conda run -n web python manage.py migrate")
             
+            if self.db_type == "MySQL":
+                # making cnf file
+                os.system(f"cd {cwd} && touch my.cnf")
+                with open(f"{cwd}/my.cnf", "w") as file:
+                    lines = '''
+# my.cnf
+[client]
+database = NAME # the name of the database that you just created
+user = USER # the name of the user for example root
+password = PASSWORD # the password for that user
+default-character-set = utf8
+'''
+                    file.writelines(lines)
+                # Adding cnf path to env
+                with open(f'{cwd}/.env', 'r') as file:
+                    lines = file.readlines()
+                for i, line in enumerate(lines):
+                    if "DEBUG=True" in line:
+                        cnf_path = "\n" + f"DB_INFO_PATH={cwd}/my.cnf"
+                        lines.insert(i + 1, cnf_path)
+                        break
+                with open(f'{cwd}/.env', 'w') as file:
+                    file.writelines(lines)
+                # Changing DB engine
+                with open(f'{cwd}/core/settings.py', 'r') as file:
+                    lines = file.readlines()
+                for i, line in enumerate(lines):
+                    if '"ENGINE": "django.db.backends.sqlite3"' in line:
+                        lines[i] = '        "ENGINE": "django.db.backends.mysql", \n'
+                        break
+                with open(f'{cwd}/core/settings.py', 'w') as file:
+                    file.writelines(lines)
+                # Changing DB options
+                with open(f'{cwd}/core/settings.py', 'r') as file:
+                    lines = file.readlines()
+                for i, line in enumerate(lines):
+                    if '"NAME": BASE_DIR / "db.sqlite3"' in line:
+                        lines[i] = '''
+        "OPTIONS": {
+            "read_default_file": env("DB_INFO_PATH"),
+        },
+'''
+                        break
+                with open(f'{cwd}/core/settings.py', 'w') as file:
+                    file.writelines(lines)
+
         loader.ok("✔")
 
 class Style:
