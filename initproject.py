@@ -7,6 +7,17 @@ class Database:
     def __init__(self, db_type: str = "SQLite") -> None:
         self.db_type = db_type
 
+    def db_setup(self, cwd: str) -> None:
+        with yaspin() as loader:
+            loader.text = f"Adding {self.db_type}"
+            loader.color = "green"
+
+            if self.db_type == "SQLite":
+                os.system(f"cd {cwd} && conda run -n web python manage.py makemigrations")
+                os.system(f"cd {cwd} && conda run -n web python manage.py migrate")
+            
+        loader.ok("✔")
+
 class Style:
     def __init__(self, css_type: str = "CSS") -> None:
         self.css_type = css_type
@@ -391,6 +402,8 @@ class Menu:
                 forntend.js_cdn_setup(cwd=self.cwd)
                 style = Style(css_type=css)
                 style.css_setup(cwd=self.cwd)
+                database = Database(db_type=db)
+                database.db_setup(cwd=self.cwd)
                 break
                 
                 
