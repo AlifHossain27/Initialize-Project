@@ -292,6 +292,25 @@ env = environ.Env(
                 file.writelines(lines)
 
             loader.ok("✔")
+    
+    def db_menu(self) -> str:
+        db_options = [ "SQLite", "MySQL", "Quit" ]
+        db_menu = TerminalMenu(db_options, title= "Choose a Database")
+
+        while not self.quitting:
+            db_options_index = db_menu.show()
+            db_options_choice = db = db_options[db_options_index]
+
+            if db_options_choice == "SQLite":
+                db = Database(db_type="SQLite")
+                return db.db_type
+            
+            if db_options_choice == "MySQL":
+                db = Database(db_type="MySQL")
+                return db.db_type
+            
+            if db_options_choice == "Quit":
+                self.quitting = True
 
 
 class Menu:
@@ -361,6 +380,7 @@ class Menu:
             if main_options_choice == "Django":
                 js = self.js_cdn_menu()
                 css = self.css_menu()
+                db = self.db_menu()
                 if self.quitting == True:
                     break
                 backend = Backend()
