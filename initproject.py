@@ -6,7 +6,7 @@ from simple_term_menu import TerminalMenu
 class Database:
     def __init__(self, db_type: str = "SQLite") -> None:
         self.db_type = db_type
-
+    
     def db_setup(self, cwd: str) -> None:
         with yaspin() as loader:
             loader.text = f"Adding {self.db_type}"
@@ -131,8 +131,9 @@ class Ui:
         self.ui_lib = ui_lib
 
 class Frontend:
-    def __init__(self, js_cdn: str = "JS") -> None:
+    def __init__(self, js_cdn: str = "JS", framework: str = "None") -> None:
         self.js_cdn = js_cdn
+        self.framework = framework
 
     def js_cdn_setup(self, cwd: str) -> None:
         with yaspin() as loader:
@@ -239,14 +240,35 @@ class Backend:
     def __init__(self) -> None:
         pass
 
-    def create_django_project(self) -> None:
+    def create_django_project(self, cwd: str) -> None:
         with yaspin() as loader:
             loader.text = "Creating a new Django Project"
             loader.color = "green"
 
             # Activating conda env and creating new Django project
-            os.system("conda run -n web django-admin startproject core .")
+            os.system(f"cd {cwd} && conda run -n web django-admin startproject core .")
             
+            loader.ok("✔")
+
+    def add_rest_framework(self, cwd: str) -> None:
+        with yaspin() as loader:
+            loader.text = "Adding REST Framework"
+            loader.color = "green"
+
+            # Adding REST Framework and corsheaders
+            with open(f'{cwd}/core/settings.py', 'r') as file:
+                lines = file.readlines()
+            for i, line in enumerate(lines):
+                if '"django.contrib.staticfiles",' in line:
+                    rest_framework = '''
+    "rest_framework",
+    "corsheaders",
+    '''
+                    lines.insert(i + 1, rest_framework + '\n')
+                    break
+            with open(f'{cwd}/core/settings.py', 'w') as file:
+                file.writelines(lines)
+
             loader.ok("✔")
     
     def env_setup(self, cwd: str) -> None:
@@ -254,7 +276,6 @@ class Backend:
             loader.text = "Setting up env"
             loader.color = "green"
 
-            os.system("touch .env")
             with open(f'{cwd}/.env', 'w') as file:
                 file.writelines("DEBUG=True")
             
@@ -291,6 +312,35 @@ env = environ.Env(
                     lines[i] = "DEBUG = env('DEBUG')"
                     break
             with open(f'{cwd}/core/settings.py', 'w') as file:
+                file.writelines(lines)
+
+            loader.ok("✔")
+
+    def add_jwt(self, cwd: str) -> None:
+        with yaspin() as loader:
+            loader.text = "Adding JWT"
+            loader.color = "green"
+
+            # Adding JWT secret to settings.py
+            with open(f'{cwd}/core/settings.py', 'r') as file:
+                lines = file.readlines()
+            for i, line in enumerate(lines):
+                if "DEBUG = env('DEBUG')" in line:
+                    jwt = 'JWT_SECRET = env("JWT_SECRET")'
+                    lines.insert(i + 1, jwt + '\n')
+                    break
+            with open(f'{cwd}/core/settings.py', 'w') as file:
+                file.writelines(lines)
+
+            # Adding JWT secret to .env
+            with open(f'{cwd}/.env', 'r') as file:
+                lines = file.readlines()
+            for i, line in enumerate(lines):
+                if "DEBUG=True" in line:
+                    jwt = '\nJWT_SECRET=<YOUR_JWT_SECRET>'
+                    lines.insert(i + 1, jwt + '\n')
+                    break
+            with open(f'{cwd}/.env', 'w') as file:
                 file.writelines(lines)
 
             loader.ok("✔")
@@ -349,31 +399,27 @@ env = environ.Env(
                 file.writelines(lines)
 
             loader.ok("✔")
-    
-    def db_menu(self) -> str:
-        db_options = [ "SQLite", "MySQL", "Quit" ]
-        db_menu = TerminalMenu(db_options, title= "Choose a Database")
-
-        while not self.quitting:
-            db_options_index = db_menu.show()
-            db_options_choice = db = db_options[db_options_index]
-
-            if db_options_choice == "SQLite":
-                db = Database(db_type="SQLite")
-                return db.db_type
-            
-            if db_options_choice == "MySQL":
-                db = Database(db_type="MySQL")
-                return db.db_type
-            
-            if db_options_choice == "Quit":
-                self.quitting = True
 
 
 class Menu:
     def __init__(self, quitting: bool = False) -> None:
         self.quitting = quitting
         self.cwd: str = os.getcwd()
+    
+    def frontend_framework_menu(self) -> str:
+        frontend_options = ["NextJS", "Quit"]
+        frontend_menu = TerminalMenu(frontend_options, title= "Choose a Frontend Framework")
+
+        while not self.quitting:
+            frontend_options_index = frontend_menu.show()
+            frontend_options_choice = frontend_options[frontend_options_index]
+
+            if frontend_options_choice == "NextJS":
+                frontend = Frontend(framework="NextJS")
+                return frontend.framework
+            
+            if frontend_options_choice == "Quit":
+                self.quitting = True
 
     def js_cdn_menu(self) -> str:
         js_cdn_options = [ "JS", "React", "Vue", "Quit" ]
@@ -423,8 +469,27 @@ class Menu:
             if css_options_choice == "Quit":
                 self.quitting = True
 
+    def db_menu(self) -> str:
+        db_options = [ "SQLite", "MySQL", "Quit" ]
+        db_menu = TerminalMenu(db_options, title= "Choose a Database")
+
+        while not self.quitting:
+            db_options_index = db_menu.show()
+            db_options_choice = db = db_options[db_options_index]
+
+            if db_options_choice == "SQLite":
+                db = Database(db_type="SQLite")
+                return db.db_type
+            
+            if db_options_choice == "MySQL":
+                db = Database(db_type="MySQL")
+                return db.db_type
+            
+            if db_options_choice == "Quit":
+                self.quitting = True
+
     def main_menu(self):
-        main_options = [ "Django", "Quit" ]
+        main_options = [ "Django", "Django-REST-framework", "Quit" ]
         main_menu = TerminalMenu(main_options, title = "Choose a new project")
 
         while not self.quitting:
@@ -441,7 +506,7 @@ class Menu:
                 if self.quitting == True:
                     break
                 backend = Backend()
-                backend.create_django_project()
+                backend.create_django_project(cwd=self.cwd)
                 backend.env_setup(cwd=self.cwd)
                 backend.frontend_template(cwd=self.cwd)
                 forntend = Frontend(js_cdn=js)
@@ -450,6 +515,19 @@ class Menu:
                 style.css_setup(cwd=self.cwd)
                 database = Database(db_type=db)
                 database.db_setup(cwd=self.cwd)
+                break
+
+            if main_options_choice == "Django-REST-framework":
+                frontend = self.frontend_framework_menu()
+                db = self.db_menu()
+                if self.quitting == True:
+                    break
+                backend = Backend()
+                os.system(f"cd {self.cwd} && mkdir backend")
+                backend.create_django_project(cwd=f"{self.cwd}/backend")
+                backend.env_setup(cwd=f"{self.cwd}/backend")
+                backend.add_rest_framework(cwd=f"{self.cwd}/backend")
+                backend.add_jwt(cwd=f"{self.cwd}/backend")
                 break
                 
                 
