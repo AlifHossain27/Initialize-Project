@@ -34,7 +34,7 @@ default-character-set = utf8
                     lines = file.readlines()
                 for i, line in enumerate(lines):
                     if "DEBUG=True" in line:
-                        cnf_path = "\n" + f"DB_INFO_PATH={cwd}/my.cnf"
+                        cnf_path = "\n" + f"DB_INFO_PATH={cwd}/my.cnf" + "\n"
                         lines.insert(i + 1, cnf_path)
                         break
                 with open(f'{cwd}/.env', 'w') as file:
@@ -233,6 +233,15 @@ class Frontend:
                 # Make static dir and js dir
                 else:
                     os.system(f"mkdir static && cd {cwd}/static && mkdir js")
+
+            loader.ok("✔")
+    def frontend_framework_setup(self, cwd: str) -> None:
+        with yaspin() as loader:
+            loader.text = f"Adding {self.framework}"
+            loader.color = "green"
+
+            if self.framework == "NextJS":
+                os.system(f'cd {cwd} && npx create-next-app@latest frontend --ts --tailwind --eslint --app --no-src-dir --import-alias "@/*"')
 
             loader.ok("✔")
 
@@ -518,7 +527,7 @@ class Menu:
                 break
 
             if main_options_choice == "Django-REST-framework":
-                frontend = self.frontend_framework_menu()
+                frontend_framework = self.frontend_framework_menu()
                 db = self.db_menu()
                 if self.quitting == True:
                     break
@@ -528,6 +537,10 @@ class Menu:
                 backend.env_setup(cwd=f"{self.cwd}/backend")
                 backend.add_rest_framework(cwd=f"{self.cwd}/backend")
                 backend.add_jwt(cwd=f"{self.cwd}/backend")
+                database = Database(db_type=db)
+                database.db_setup(cwd=f"{self.cwd}/backend")
+                frontend = Frontend(framework=frontend_framework)
+                frontend.frontend_framework_setup(cwd=self.cwd)
                 break
                 
                 
